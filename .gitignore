@@ -1,0 +1,7 @@
+.env
+files/log.log
+#files/id_uid_list.csv
+_worker/data/in/*
+_worker/data/out/*
+test.py
+to_do_list
