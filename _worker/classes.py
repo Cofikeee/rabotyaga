@@ -101,7 +101,7 @@ class File:
         temp_df.loc[:, df_obj.columns] = df_obj.apply(lambda x: x.str.strip().str.lower())
         df.iloc[:, old_range] = temp_df.iloc[:, updated_range]
         with pd.option_context("future.no_silent_downcasting", True):
-            df = df.replace(r'\n', ' ', regex=True).replace(r'^\s*$', np.NaN, regex=True)
+            df = df.replace(r'\n', ' ', regex=True).replace(r'^\s*$', np.nan, regex=True)
         return df
 
     def read_file(self, skip: bool) -> pd.DataFrame:
@@ -129,19 +129,19 @@ class File:
         elif Participant.required in df.iloc[:, 2].to_list():
             usecols = list(range(0, 10))
             df = File.read_excel(excel_path, sr, usecols)
-            df.insert(10, Participant.unchangeable, np.NaN)
+            df.insert(10, Participant.unchangeable, np.nan)
 
         elif Participant.include_to_print_form_stamp in df.iloc[:, -1].to_list():
             usecols = list(range(0, 9))
             df = File.read_excel(excel_path, sr, usecols)
-            df.insert(2, Participant.required, np.NaN)
-            df.insert(10, Participant.unchangeable, np.NaN)
+            df.insert(2, Participant.required, np.nan)
+            df.insert(10, Participant.unchangeable, np.nan)
         else:
             usecols = list(range(0, 8))
             df = File.read_excel(excel_path, sr, usecols)
-            df.insert(2, Participant.required, np.NaN)
-            df.insert(9, Participant.include_to_print_form_stamp, np.NaN)
-            df.insert(10, Participant.unchangeable, np.NaN)
+            df.insert(2, Participant.required, np.nan)
+            df.insert(9, Participant.include_to_print_form_stamp, np.nan)
+            df.insert(10, Participant.unchangeable, np.nan)
 
         file.df = df
         df = file.df_strip()
@@ -227,7 +227,7 @@ class Stage:
     @staticmethod
     def update_can_delete_before_stage_completed(df):
         df.loc[df['can_delete_before_stage_completed'] == 'да', 'can_delete_before_stage_completed'] = 'true'
-        df.loc[df['can_delete_before_stage_completed'] == 'нет', 'can_delete_before_stage_completed'] = np.NaN
+        df.loc[df['can_delete_before_stage_completed'] == 'нет', 'can_delete_before_stage_completed'] = np.nan
 
     @staticmethod
     def stages_drop_duplicates(stages_df):
@@ -496,7 +496,7 @@ class Participant:
                                          [get_current_time()] +
                                          ['null'] +
                                          ['null'] +
-                                         [np.NaN] +
+                                         [np.nan] +
                                          ['false'] +
                                          ['true'] +
                                          ['true'] +
