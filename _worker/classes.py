@@ -3,45 +3,68 @@ import pandas as pd
 import uuid
 from tabulate import tabulate
 from utils import get_current_time
+from pathlib import Path
 
 
 class File:
-    def __init__(self, file_uid=None, file_type=None, stage=None):
+    def __init__(self,
+                 file_uid: str = None,
+                 file_type: str = None,
+                 step: str = None,
+                 df: pd.DataFrame = None) -> None:
+
         self.file_type = file_type
-
+        self.file_uid = file_uid
+        self.step = step
+        self.df = df
         self.path_excel = f'_worker/data/in/{file_uid}.xlsx'
-        self.path_df_to_csv = f'_worker/data/out/{file_uid}/_{file_type}_{stage}_{file_uid}.csv'
+        self.path_df_to_csv = f'_worker/data/out/{file_uid}/_{file_type}_{step}_{file_uid}.csv'
 
-    @staticmethod
-    def get_empty_df(stage):
-        return pd.read_csv(f'files/{stage}.csv')
+    # Создание директории для csv файлов
+    def create_output_dir(self) -> None:
+        Path(f'_worker/data/out/{self.file_uid}').mkdir(parents=True, exist_ok=True)
+        return
 
-    @staticmethod
-    def update_columns(df, file_type):
-        if file_type == 'DOC':
-            df.columns = ['stage_type',
-                          'participant_type',
-                          'link_to_fixed_employee',
-                          'participant_action_type',
-                          'stage_completeness_condition',
-                          'participant_signing_type']
+    # Получение типа маршрута
+    def get_route_type(self) -> str:
+        excel_path = f'_worker/data/in/{self.file_uid}.xlsx'
+        df = pd.DataFrame(pd.read_excel(excel_path))
+        if 'Привязка к юрлицу' in df.iloc[:, 0].to_list():
+            return 'DOC'
         else:
-            df.columns = ['stage_type',
-                          'participant_type',
-                          'required',
-                          'link_to_fixed_employee',
-                          'related_participant_id',
-                          'participant_action_type',
-                          'stage_completeness_condition',
-                          'can_delete_before_stage_completed',
-                          'responsible_enabled',
-                          'include_to_print_form_stamp',
-                          'unchangeable']
-        df.dropna(how='all', inplace=True)
+            return 'APP'
 
-    @staticmethod
-    def update_responsible_enabled(df):
-        df = df.assign(responsible_enabled='false')
+    # Получение пустой основы для дф
+    def get_empty_df(self) -> pd.DataFrame:
+        return pd.read_csv(f'files/{self.step}.csv')
+
+    # Переименование колонок согласно бд
+    def update_columns(self) -> pd.DataFrame:
+        if self.file_type == 'DOC':
+            self.df.columns = ['stage_type',
+                               'participant_type',
+                               'link_to_fixed_employee',
+                               'participant_action_type',
+                               'stage_completeness_condition',
+                               'participant_signing_type']
+        else:
+            self.df.columns = ['stage_type',
+                               'participant_type',
+                               'required',
+                               'link_to_fixed_employee',
+                               'related_participant_id',
+                               'participant_action_type',
+                               'stage_completeness_condition',
+                               'can_delete_before_stage_completed',
+                               'responsible_enabled',
+                               'include_to_print_form_stamp',
+                               'unchangeable']
+        df = self.df.dropna(how='all')
+        return df
+
+    # Автоматическое определение ролей кадровик + ответственный
+    def update_responsible_enabled(self) -> pd.DataFrame:
+        df = self.df.assign(responsible_enabled='false')
         if 'ответственный' in df['participant_type'].to_list():
             if 'кадровики' in df['participant_type'].to_list():
                 df.loc[df['participant_type'] == 'кадровики', 'responsible_enabled'] = 'true'
@@ -55,19 +78,17 @@ class File:
                 df.loc[df['participant_type'] == 'ответственный', 'participant_type'] = 'кадровики'
         return df
 
-    @staticmethod
-    def formatted_data(file_uid, file_type):
-        # Создание основы датафрейма
-        df = File.read_file(file_uid, file_type, True)
-        # Фикс колонок
-        File.update_columns(df=df, file_type=file_type)
-        df = File.update_responsible_enabled(df=df)
-
+    # Создание основы дф + фикс колонок
+    def formatted_data(self) -> pd.DataFrame:
+        file = File(file_uid=self.file_uid, file_type=self.file_type, step=self.step)
+        file.df = file.read_file(skip=True)
+        file.df = file.update_columns()
+        df = file.update_responsible_enabled()
         return df.reset_index(drop=True)
 
-    @staticmethod
-    def df_strip(df, file_type):
-        if file_type == 'APP':
+    def df_strip(self) -> pd.DataFrame:
+        df = self.df
+        if self.file_type == 'APP':
             old_range = list(range(1, 11))
             updated_range = list(range(0, 10))
         else:
@@ -83,15 +104,10 @@ class File:
             df = df.replace(r'\n', ' ', regex=True).replace(r'^\s*$', np.NaN, regex=True)
         return df
 
-    @staticmethod
-    def read_excel(excel_path, sr, usecols):
-        df = pd.DataFrame(pd.read_excel(excel_path, skiprows=sr, usecols=usecols))
-        return df
-
-    @staticmethod
-    def read_file(file_uid, file_type, skip):
+    def read_file(self, skip: bool) -> pd.DataFrame:
         # Предварительная выгрузка, чтобы проверить сколько полей отсекать
-        excel_path = File(file_uid=file_uid).path_excel
+        file = File(file_uid=self.file_uid)
+        excel_path = file.path_excel
         excel_df = pd.read_excel(excel_path, engine='openpyxl')
         df = pd.DataFrame(excel_df)
 
@@ -100,10 +116,9 @@ class File:
             sr = df[df.iloc[:, 0] == 'Название участника'].index[0] + 1
         else:
             sr = 0
-        usecols = None
 
         # Какие columns добавить
-        if file_type == 'DOC':
+        if self.file_type == 'DOC':
             usecols = list(range(0, 6))
             df = File.read_excel(excel_path, sr, usecols)
 
@@ -128,12 +143,28 @@ class File:
             df.insert(9, Participant.include_to_print_form_stamp, np.NaN)
             df.insert(10, Participant.unchangeable, np.NaN)
 
-        return File.df_strip(df, file_type)
+        file.df = df
+        df = file.df_strip()
+        return df
+
+    def csv_printer(self) -> None:
+        file = File(file_uid=self.file_uid, file_type=self.file_type, step=self.step)
+        self.df.to_csv(file.path_df_to_csv, sep=',', index=False)
+        return
 
     @staticmethod
-    def csv_printer(df, file_type, file_uid, stage):
-        df.to_csv(File(file_uid=file_uid, file_type=file_type, stage=stage).path_df_to_csv, sep=',', index=False)
-        return
+    def read_excel(excel_path, sr, usecols):
+        df = pd.DataFrame(pd.read_excel(excel_path, skiprows=sr, usecols=usecols))
+        return df
+
+    def update_file_type(self) -> str:
+        pass
+
+    def update_template_name(self) -> str:
+        pass
+
+    def get_template_id(self) -> str:
+        pass
 
 
 class Alert:
@@ -148,19 +179,23 @@ class Alert:
             return []
 
 
-class Template:
-    @staticmethod
-    def update_file_type(file_type):
-        if file_type == 'DOC':
+class Template(File):
+    def __init__(self, file_uid, file_type):
+        super().__init__(file_uid, file_type)
+        self.step = 'template'
+
+    def update_file_type(self) -> str:
+        if self.file_type == 'DOC':
             file_type_name = 'DOCUMENT'
+
         else:
             file_type_name = 'APPLICATION'
         return file_type_name
 
-    @staticmethod
-    def update_template_name(file_uid):
+    def update_template_name(self) -> str:
         # Получение названия маршрута
-        excel_file = File(file_uid=file_uid).path_excel
+        file = File(file_uid=self.file_uid)
+        excel_file = file.path_excel
         df_name = pd.DataFrame(pd.read_excel(excel_file))
 
         try:
@@ -170,10 +205,9 @@ class Template:
 
         return template_name
 
-    @staticmethod
-    def get_template_id(file_uid, file_type):
-        stage = 'template'
-        template_df = pd.read_csv(File(file_uid=file_uid, file_type=file_type, stage=stage).path_df_to_csv)
+    def get_template_id(self) -> str:
+        file = File(file_uid=self.file_uid, file_type=self.file_type, step=self.step)
+        template_df = pd.read_csv(file.path_df_to_csv)
         template_id = template_df.iloc[0, 0]
         return template_id
 
@@ -197,6 +231,8 @@ class Stage:
 
     @staticmethod
     def stages_drop_duplicates(stages_df):
+        print(stages_df)
+        print(stages_df.to_string(index=False))
         subset = stages_df.columns[1::]
         with pd.option_context("future.no_silent_downcasting", True):
             stages_df = (stages_df.groupby("index_number", as_index=False)
@@ -225,7 +261,6 @@ class Stage:
 
     @staticmethod
     def stages_fix_can_delete(stages_df):
-        #
         checker_df = stages_df[stages_df['stage_type'] != 'RECEIVING'].copy()
         checker_df['count'] = stages_df.groupby(['can_delete_before_stage_completed'])['id'].transform('count')
         checker_df = checker_df[['can_delete_before_stage_completed', 'count']]
@@ -286,6 +321,7 @@ class Stage:
                         employee_counter += 1
                 except IndexError:
                     return stages_df
+        return stages_df
 
     @staticmethod
     def stages_fill_doc(df, stages_df, template_id):
@@ -318,15 +354,16 @@ class Stage:
     @staticmethod
     def stages_fill(file_uid, file_type, template_id):
         # Создание пустого датафрейма stages
-        stages_df = File.get_empty_df('stage')
-
+        file = File(file_uid=file_uid, file_type=file_type, step='stage')
+        stages_df = file.get_empty_df()
         # Подружаем пустой
-        df = File.formatted_data(file_uid, file_type)
+        df = file.formatted_data()
 
         if file_type == 'APP':
             stages_df = Stage.stages_fill_app(df, stages_df, template_id)
         else:
             stages_df = Stage.stages_fill_doc(df, stages_df, template_id)
+        print('stages_df2', stages_df.to_string())
         return stages_df
 
 
@@ -444,10 +481,10 @@ class Participant:
 
     @staticmethod
     def part_fill(file_uid, file_type):
-
+        file = File(file_uid=file_uid, file_type=file_type, step='participant')
         # Создание пустого датафрейма participants
-        df = File.formatted_data(file_uid, file_type)
-        part_df = File.get_empty_df('participant')
+        df = file.formatted_data()
+        part_df = file.get_empty_df()
 
         if file_type == 'APP':
 
@@ -580,15 +617,16 @@ class Participant:
         df_no_r = Participant.autofill(df_no_r)
 
         # Объединение получателей и подписантов
-        df_r = df_no_r._append(df_r, ignore_index=True)
-        df_r = df_r.fillna('null').sort_values('created_date').reset_index(drop=True)
+        df_all = df_no_r._append(df_r, ignore_index=True)
+        df_all = df_all.fillna('null').sort_values('created_date').reset_index(drop=True)
 
-        return df_r
+        return df_all
 
     @staticmethod
     def get_receiver_type(file_uid, file_type):
         # Предварительная выгрузка, чтобы проверить сколько полей отсекать
-        df = File.read_file(file_uid, file_type, False)
+        file = File(file_uid=file_uid, file_type=file_type)
+        df = file.read_file(False)
 
         # Для документа
         if file_type == 'DOC':
@@ -792,8 +830,8 @@ class Participant:
 class LegalEntity:
     @staticmethod
     def legal_entity_check(file_uid, file_type, part_df):
-
-        df = File.read_file(file_uid, file_type, False)
+        file = File(file_uid=file_uid, file_type=file_type)
+        df = file.read_file(False)
         try:
             temp_df = df[df.iloc[:, 0] == 'Привязка к юрлицу'].fillna('null')
             legal_entity = temp_df.iloc[:, 1].to_string(index=False)

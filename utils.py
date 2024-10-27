@@ -6,10 +6,6 @@ from aiogram.types import FSInputFile
 from tabulate import tabulate
 
 
-def get_current_time():
-    return pd.Timestamp.now(tz='UTC')
-
-
 def get_route_type(file_uid):
     excel_path = f'_worker/data/in/{file_uid}.xlsx'
     df = pd.DataFrame(pd.read_excel(excel_path))
@@ -17,6 +13,10 @@ def get_route_type(file_uid):
         return 'DOC'
     else:
         return 'APP'
+
+
+def get_current_time():
+    return pd.Timestamp.now(tz='UTC')
 
 
 def pretty_printer(log_text, new_id, stage, actual_file_uid, edit_route_id):

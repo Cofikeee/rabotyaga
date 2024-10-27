@@ -31,6 +31,7 @@ async def create_new(message: Message, state: FSMContext):
         uuid.UUID(edit_route_id)
     except (TypeError, ValueError):
         uuid_check = 'failed'
+        edit_route_id = None
         if message.text == '🆕 Создать Маршрут(ы)':
             await message.answer(f'Нужно прикрепить xlsx файл')
             await state.set_state(AllStates.stepExportNew)

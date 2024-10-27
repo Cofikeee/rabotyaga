@@ -1,4 +1,4 @@
-from utils import create_output_dir, get_route_type
+from _worker.classes import File
 from _worker.csv_compilers import (signing_route_template_csv,
                                    signing_route_template_participant_csv,
                                    signing_route_template_legal_entity_csv,
@@ -6,12 +6,13 @@ from _worker.csv_compilers import (signing_route_template_csv,
 
 
 def main(file_uid, edit_route_id):
+    new_file = File(file_uid)
 
     # Создание директории для csv файлов
-    create_output_dir(file_uid)
+    new_file.create_output_dir()
 
     # Определение типа файла
-    file_type = get_route_type(file_uid)
+    file_type = new_file.get_route_type()
 
     # Создание csv файлов для таблиц template > stages > participants > *legal_entity
     missing_values_t = signing_route_template_csv(file_uid, file_type)

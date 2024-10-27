@@ -5,15 +5,16 @@ from _worker.classes import File, Alert, Template, Stage, Participant, LegalEnti
 
 
 def signing_route_template_csv(file_uid, file_type):
-
+    file = File(file_uid=file_uid, file_type=file_type, step='template')
+    template = Template(file_uid=file_uid, file_type=file_type)
     # Получение названия типа маршрута
-    file_type_name = Template.update_file_type(file_type)
+    file_type_name = template.update_file_type()
 
     # Получение названия маршрута
-    template_name = Template.update_template_name(file_uid)
+    template_name = template.update_template_name()
 
     # Создание пустого датафрейма template
-    template_df = File.get_empty_df('template')
+    template_df = file.get_empty_df()
 
     # Заполение датафрейма template
     template_df.loc[len(template_df)] = ([uuid.uuid4(),
@@ -21,23 +22,25 @@ def signing_route_template_csv(file_uid, file_type):
                                           template_name,
                                           file_type_name])
 
-    # Выгрузка датафрейма в csv, выгрузка в лог
-    File.csv_printer(template_df, file_type, file_uid, 'template')
+    file.df = template_df
+    # Выгрузка датафрейма в csv
+    file.csv_printer()
 
     # Проверка на наличие названия у маршрута:
     return Alert.check_template_name(template_name)
 
 
 def signing_route_template_stage_csv(file_uid, file_type, edit_route_id):
+    file = File(file_uid=file_uid, file_type=file_type, step='stage')
+    template = Template(file_uid=file_uid, file_type=file_type)
     # Получаем template_id
     if edit_route_id is None:
-        template_id = Template.get_template_id(file_uid, file_type)
+        template_id = template.get_template_id()
     else:
         template_id = edit_route_id
 
     # Создание и заполнение датафрейма
     stages_df = Stage.stages_fill(file_uid, file_type, template_id)
-
     # Удаление дубликатов
     stages_df = Stage.stages_drop_duplicates(stages_df)
 
@@ -57,8 +60,9 @@ def signing_route_template_stage_csv(file_uid, file_type, edit_route_id):
     if file_type == 'APP':
         stages_df = Stage.stages_fix_can_delete(stages_df)
 
+    file.df = stages_df
     # Выгрузка датафрейма в csv, выгрузка в лог
-    File.csv_printer(stages_df, file_type, file_uid, 'stage')
+    file.csv_printer()
 
     return
 
@@ -90,7 +94,7 @@ def signing_route_template_participant_csv(file_uid, file_type):
         part_df = Participant.part_receiver_fill(receiver_type, part_df, stage_counter)
 
 
-    stages_df = pd.read_csv(File(file_uid=file_uid, file_type=file_type, stage='stage').path_df_to_csv)
+    stages_df = pd.read_csv(File(file_uid=file_uid, file_type=file_type, step='stage').path_df_to_csv)
     stages_df = stages_df[['id', 'index_number']].rename(columns={'id': 'template_stage_id',
                                                                   'index_number': 'template_stage_index'})
 
@@ -103,7 +107,8 @@ def signing_route_template_participant_csv(file_uid, file_type):
     part_df = Participant.part_fix_rows(part_df, file_type)
 
     # Выгрузка датафрейма в csv, выгрузка в лог
-    File.csv_printer(part_df, file_type, file_uid, 'participant')
+    file = File(file_uid=file_uid, file_type=file_type, step='participant', df=part_df)
+    file.csv_printer()
 
     df_name = pd.DataFrame(pd.read_excel(File(file_uid=file_uid).path_excel))
     try:
@@ -121,21 +126,25 @@ def signing_route_template_participant_csv(file_uid, file_type):
 
 def signing_route_template_legal_entity_csv(file_uid):
     file_type = 'DOC'
+    file = File(file_uid=file_uid, file_type=file_type, step='legal_entity')
+    template = Template(file_uid=file_uid, file_type=file_type)
+    #participant = File(file_uid=file_uid, file_type=file_type, step='participant')
     # Создание пустого датафрейма из шаблона датафрейма
-    le_df = File.get_empty_df('legal_entity')
+    le_df = file.get_empty_df()
 
     # Получение id маршрута документа
-    template_id = Template.get_template_id(file_uid, file_type)
+    template_id = template.get_template_id()
 
     # Получение id фиксированного сотрудника
-    part_df = pd.read_csv(File(file_uid=file_uid, file_type=file_type, stage='participant').path_df_to_csv)
+    part_df = pd.read_csv(File(file_uid=file_uid, file_type=file_type, step='participant').path_df_to_csv)
     try:
         fixed_employee_id = part_df.dropna(subset='employee_id')['employee_id'].to_list()[0]
         le_df.loc[len(le_df)] = ([uuid.uuid4(),
                                   template_id,
                                   f'(SELECT legal_entity_id FROM ekd_ekd.employee WHERE id IN (\'{fixed_employee_id}\'))'])
         # Выгрузка датафрейма в csv, выгрузка в лог
-        File.csv_printer(le_df, file_type, file_uid, 'legal_entity')
+        file.df = le_df
+        file.csv_printer()
 
     except IndexError:
         pass
