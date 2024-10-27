@@ -231,8 +231,6 @@ class Stage:
 
     @staticmethod
     def stages_drop_duplicates(stages_df):
-        print(stages_df)
-        print(stages_df.to_string(index=False))
         subset = stages_df.columns[1::]
         with pd.option_context("future.no_silent_downcasting", True):
             stages_df = (stages_df.groupby("index_number", as_index=False)
@@ -363,7 +361,6 @@ class Stage:
             stages_df = Stage.stages_fill_app(df, stages_df, template_id)
         else:
             stages_df = Stage.stages_fill_doc(df, stages_df, template_id)
-        print('stages_df2', stages_df.to_string())
         return stages_df
 
 
