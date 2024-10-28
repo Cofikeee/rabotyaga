@@ -1,4 +1,5 @@
 .env
+.venv
 files/log.log
 files/id_uid_list.csv
 _worker/data/in/*
