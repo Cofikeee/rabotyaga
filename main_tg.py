@@ -26,8 +26,8 @@ async def start():
     await bot.delete_webhook(drop_pending_updates=True)
 
     # Запускаем логгер
-    logging.basicConfig(#filename='files/log.log',
-                        #filemode='a',
+    logging.basicConfig(filename='files/log.log',
+                        filemode='a',
                         level=logging.INFO,
                         format='%(asctime)s - [%(levelname)s] - %(name)s - '
                                '(%(filename)s).%(funcName)s(%(lineno)d) - %(message)s')

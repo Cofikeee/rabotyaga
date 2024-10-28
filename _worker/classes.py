@@ -94,7 +94,6 @@ class File:
         else:
             old_range = list(range(1, 6))
             updated_range = list(range(0, 5))
-        print(self.file_type)
         # strip + lowercase + range update колонок для удобства
         temp_df = df.copy().iloc[:, old_range]
         df_obj = temp_df.select_dtypes('object')
@@ -102,7 +101,6 @@ class File:
         df.iloc[:, old_range] = temp_df.iloc[:, updated_range]
         with pd.option_context("future.no_silent_downcasting", True):
             df = df.replace(r'\n', ' ', regex=True).replace(r'^\s*$', np.nan, regex=True)
-        print(df.to_string())
         return df
 
     def read_file(self, skip: bool) -> pd.DataFrame:

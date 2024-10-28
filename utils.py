@@ -176,6 +176,5 @@ def unload_sql_tg(file_uid_list, edit_route_id):
         shutil.rmtree(f'_worker/data/out/{file_uid}/')
 
     pretty_output = f'_worker/data/out/preview_{new_id}.txt'
-    print(open(pretty_output, 'r').read())
     return FSInputFile(sql_query), FSInputFile(pretty_output)
 
