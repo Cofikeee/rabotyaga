@@ -11,7 +11,7 @@ with validation as (SELECT CASE WHEN count(DISTINCT legal_entity_id) = 1 THEN 'o
 								WHEN count(DISTINCT legal_entity_id) > 1 THEN 'err'
 								END as is_ok
 							FROM ekd_ekd.employee
-							WHERE id IN ('$ids_list'))
+							WHERE id IN ($ids_list))
 
 SELECT raise_exception('В маршруте [$template_name] указаны сотрудники из разных ЮЛ.')
 FROM validation
