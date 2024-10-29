@@ -316,7 +316,7 @@ class Stage:
                                                   [can_cancel])
                         counter += 1
                         employee_counter += 1
-                except IndexError:
+                except (IndexError, KeyError):
                     return stages_df
         return stages_df
 
