@@ -64,7 +64,7 @@ def add_id(file_uid_list):
     return
 
 
-def query_printer(step, path, file_group_id, edit_route_id):
+def query_printer(step, path, file_group_id, edit_route_id, fixed_id_list):
 
     def convert(value):
         # Конвертация всех значений в string
@@ -89,8 +89,15 @@ def query_printer(step, path, file_group_id, edit_route_id):
     if step == 'template' and edit_route_id is not None:
         with (open(f"files/delete_old_route.sql", "r") as read,
               open(f"_worker/data/out/string_SQL_{file_group_id}.txt", "a") as write):
-            for line in read:
-                write.write(line.replace("$templateId", f"{edit_route_id}"))
+            if len(fixed_id_list) > 0:
+                for line in read:
+                    write.write(line.replace("$templateId", f"'{edit_route_id}'")
+                                .replace("--temp_le_check",f"DELETE FROM signing_route_template_legal_entity WHERE template_id = templateId;"))
+            else:
+                for line in read:
+                    write.write(line.replace("$templateId", f"'{edit_route_id}'")
+                                .replace("--temp_le_check", f""))
+
     else:
         with open(path, 'r') as file:
             reader = csv.reader(file)
@@ -127,6 +134,8 @@ def unload_sql_tg(file_uid_list, edit_route_id):
         file_type = get_route_type(file_uid)
         df_name = pd.DataFrame(pd.read_excel(f'_worker/data/in/{file_uid}.xlsx'))
         add_string(f';\n-- [{df_name.iloc[0, 1]}]', file_group_id)
+        part_df = pd.read_csv(f'_worker/data/out/{file_uid}/_{file_type}_participant_{file_uid}.csv')
+        fixed_id_list = part_df.dropna(subset='employee_id')['employee_id'].to_list()
         for stage in stages:
             try:
                 path_stage = f'_worker/data/out/{file_uid}/_{file_type}_{stage}_{file_uid}.csv'
@@ -136,10 +145,8 @@ def unload_sql_tg(file_uid_list, edit_route_id):
                                stage,
                                file_uid,
                                edit_route_id)
-                query_printer(stage, path_stage, file_group_id, edit_route_id)
+                query_printer(stage, path_stage, file_group_id, edit_route_id, fixed_id_list)
                 if stage == 'legal_entity':
-                    part_df = pd.read_csv(f'_worker/data/out/{file_uid}/_{file_type}_participant_{file_uid}.csv')
-                    fixed_id_list = part_df.dropna(subset='employee_id')['employee_id'].to_list()
                     if len(fixed_id_list) > 1:
                         for i in range(len(fixed_id_list)):
                             fixed_id_list[i] = f'\'{fixed_id_list[i]}\''

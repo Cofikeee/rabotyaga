@@ -1,5 +1,6 @@
 ;
 -- Проверка связки ЮЛ-сотрудники;
+SET SEARCH_PATH to ekd_ekd;
 CREATE OR REPLACE FUNCTION raise_exception(text)
 RETURNS void AS $$
 BEGIN
@@ -10,7 +11,7 @@ $$ LANGUAGE plpgsql;
 with validation as (SELECT CASE WHEN count(DISTINCT legal_entity_id) = 1 THEN 'ok'
 								WHEN count(DISTINCT legal_entity_id) > 1 THEN 'err'
 								END as is_ok
-							FROM ekd_ekd.employee
+							FROM employee
 							WHERE id IN ($ids_list))
 
 SELECT raise_exception('В маршруте [$template_name] указаны сотрудники из разных ЮЛ.')

@@ -8,7 +8,7 @@ $$
         templateId uuid;
         stageId record;
     BEGIN
-        templateId := '$templateId';
+        templateId := $templateId;
 
         FOR stageId IN (SELECT id
                         FROM signing_route_template_stage
@@ -18,6 +18,10 @@ $$
                 DELETE FROM signing_route_template_participant WHERE template_stage_id = stageId.id;
                 DELETE FROM signing_route_template_stage WHERE id = stageId.id;
             END LOOP;
+        --temp_le_check
         UPDATE signing_route_template SET version = version + 1 WHERE id = templateId;
 END
 $$;
+
+
+
