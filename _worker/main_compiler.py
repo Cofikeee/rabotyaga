@@ -21,7 +21,7 @@ def main(file_uid, edit_route_id):
 
     # Создание csv файла для таблицы legal_entity при необходимости
     if file_type == 'DOC' and need_le is True:
-        signing_route_template_legal_entity_csv(file_uid)
+        signing_route_template_legal_entity_csv(file_uid, edit_route_id)
 
     # Собираем ошибки / инфу про привязку к ЮЛ
     missing_values = missing_values_t + missing_values_p

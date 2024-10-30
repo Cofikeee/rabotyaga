@@ -13,8 +13,8 @@ from tg_bot.handlers.instruction import instruction
 from tg_bot.handlers.new_template_handler import export_new, create_new, edit_new
 
 load_dotenv()
-#token = os.getenv('TEST_BOT_TOKEN')
-token = os.getenv('BOT_TOKEN')
+token = os.getenv('TEST_BOT_TOKEN')
+#token = os.getenv('BOT_TOKEN')
 admin_id = os.getenv('ADMIN_ID')
 bot = Bot(token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()

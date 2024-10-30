@@ -124,17 +124,21 @@ def signing_route_template_participant_csv(file_uid, file_type):
     return Participant.part_missing_values(part_df, template_name, file_type), False
 
 
-def signing_route_template_legal_entity_csv(file_uid):
+def signing_route_template_legal_entity_csv(file_uid, edit_route_id):
     file_type = 'DOC'
+
     file = File(file_uid=file_uid, file_type=file_type, step='legal_entity')
     template = Template(file_uid=file_uid, file_type=file_type)
-    #participant = File(file_uid=file_uid, file_type=file_type, step='participant')
+
     # Создание пустого датафрейма из шаблона датафрейма
     le_df = file.get_empty_df()
 
     # Получение id маршрута документа
-    template_id = template.get_template_id()
-
+    if edit_route_id is None:
+        template_id = template.get_template_id()
+    else:
+        template_id = edit_route_id
+    print(template_id)
     # Получение id фиксированного сотрудника
     part_df = pd.read_csv(File(file_uid=file_uid, file_type=file_type, step='participant').path_df_to_csv)
     try:

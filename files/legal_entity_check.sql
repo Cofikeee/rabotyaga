@@ -15,4 +15,6 @@ with validation as (SELECT CASE WHEN count(DISTINCT legal_entity_id) = 1 THEN 'o
 
 SELECT raise_exception('В маршруте [$template_name] указаны сотрудники из разных ЮЛ.')
 FROM validation
-WHERE is_ok = 'err'
+WHERE is_ok = 'err';
+
+DROP FUNCTION IF EXISTS raise_exception(text)
