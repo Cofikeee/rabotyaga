@@ -7,3 +7,4 @@ _worker/data/in/*.*
 _worker/data/out/*.*
 test.py
 to_do_list
+__pycache__
