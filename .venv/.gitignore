@@ -1,7 +1,0 @@
-# created by virtualenv automatically*
-
-.env
-*.xlsx
-*.txt
-*.csv
-*.sql
